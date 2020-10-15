@@ -1,0 +1,5 @@
+#/bin/bash -e
+# usage: ./configure [parameters...]
+mkdir -p build
+cd build
+cmake "$@" ..
