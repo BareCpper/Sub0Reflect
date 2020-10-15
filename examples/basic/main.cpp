@@ -37,6 +37,33 @@ namespace test
         Point a, b, c;
     };
 
+
+    #define SUB0_FIRST_ARG(arg,...) arg
+#define SUB0_STRINGIFY( a ) #a 
+
+    #define SUB0_REFLECT_FIELD( member ) \
+        using member = sub0::MemberTie<decltype(type_t::member) type_t::*, &type_t::member>; \
+        [[nodiscard]] constexpr std::string_view name(member) noexcept { return SUB0_STRINGIFY(member); }
+
+    #define sub0_reflect( T, ... ) \
+        struct sub0_Reflect_##T { \
+            using type_t = T; \
+            [[nodiscard]] static constexpr auto members() { return std::tuple<__VA_ARGS__>(); } \
+            SUB0_REFLECT_FIELD( SUB0_FIRST_ARG(__VA_ARGS__) )
+
+
+    #define SUB0_REFLECT_END( T ) \
+    }; \
+    constexpr sub0_Reflect_##T reflect(T) { return {}; }; \
+    constexpr std::string_view name(sub0_Reflect_##T) { return #T; };
+
+#if 1
+    sub0_reflect(Triangle, a, b, c); //< @todo Expnd to to that shown below!
+  
+    SUB0_REFLECT_FIELD(b);
+    SUB0_REFLECT_FIELD(c);
+    SUB0_REFLECT_END(Triangle);
+#else
     struct sub0_Reflect_Triangle
     {
         using a = sub0::MemberTie<decltype(Triangle::a) Triangle::*, &Triangle::a>;
@@ -52,7 +79,7 @@ namespace test
     };
     constexpr sub0_Reflect_Triangle reflect(Triangle) { return {}; };
     constexpr std::string_view name(sub0_Reflect_Triangle) { return "Triangle"; };
-
+#endif
 }
 
 template< typename T >
