@@ -1,11 +1,11 @@
-/** Sub0buS core header-only library
+/** Sub0Reflect core header-only library
  * @remark Simple and Lightweight Parser-less C++17 Reflection at Compile-time - Programmatically describe simple struct memory-layout or interface-definition
  * 
  *  This file is part of Sub0Pub. Original project source available at https://github.com/Crog/Sub0Pub/blob/master/sub0pub.hpp
  * 
  *  MIT License
  *
- * Copyright (c) 2020 Craig Hutchinson <craig-sub0bus@crog.uk>
+ * Copyright (c) 2020 Craig Hutchinson <craig-sub0reflect@crog.uk>
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files 
  *  (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, 

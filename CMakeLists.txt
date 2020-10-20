@@ -2,13 +2,13 @@
 # @todo >3.10 needed for include(GoogleTest)?
 cmake_minimum_required(VERSION 3.7.1)
 
-# Detect if Sub0buS is being included inside another project
+# Detect if Sub0Reflect is being included inside another project
 # - We can disable test generation etc.
 if(DEFINED PROJECT_NAME)
   set(IS_SUBPROJECT ON)
 endif()
 
-project(Sub0buS VERSION 0.1.2 LANGUAGES CXX )
+project(Sub0Reflect VERSION 0.1.2 LANGUAGES CXX )
 
 set(CMAKE_CXX_STANDARD 98)
 
@@ -43,50 +43,50 @@ if(SUB0BUS_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
-# Sub0buS as header only target
+# Sub0Reflect as header only target
 # + Namespaced alias for linking against core library from client
-add_library(Sub0buS INTERFACE)
-add_library(Sub0buS::Sub0buS ALIAS Sub0buS)
+add_library(Sub0Reflect INTERFACE)
+add_library(Sub0Reflect::Sub0Reflect ALIAS Sub0Reflect)
 
-target_include_directories(Sub0buS
+target_include_directories(Sub0Reflect
   INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_sources( Sub0buS 
+target_sources( Sub0Reflect 
     INTERFACE 
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include/sub0bus/sub0bus.hpp>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/sub0bus/sub0bus.hpp>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include/sub0reflect/sub0reflect.hpp>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/sub0reflect/sub0reflect.hpp>
 )
 
-# Install project if not included by add_subdirecrory(Sub0buS) from another project
+# Install project if not included by add_subdirecrory(Sub0Reflect) from another project
 if (NOT IS_SUBPROJECT)
 
     include(CMakePackageConfigHelpers)
     
-    set(SUB0BUS_CMAKE_CONFIG_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Sub0buS")
+    set(SUB0BUS_CMAKE_CONFIG_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Sub0Reflect")
     
     configure_package_config_file(
-        "${CMAKE_CURRENT_LIST_DIR}/cmake/Sub0buSConfig.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/Sub0buSConfig.cmake"
+        "${CMAKE_CURRENT_LIST_DIR}/cmake/Sub0ReflectConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/Sub0ReflectConfig.cmake"
         INSTALL_DESTINATION
           "${SUB0BUS_CMAKE_CONFIG_DESTINATION}"
     )
 
     write_basic_package_version_file(
-        "${PROJECT_BINARY_DIR}/Sub0buSConfigVersion.cmake"
+        "${PROJECT_BINARY_DIR}/Sub0ReflectConfigVersion.cmake"
         COMPATIBILITY 
             SameMajorVersion
     )
 
-    # Install Sub0buS target as Sub0buS::Sub0buS
+    # Install Sub0Reflect target as Sub0Reflect::Sub0Reflect
     # @todo Test/verify install
     install(
         TARGETS
-            Sub0buS
+            Sub0Reflect
         EXPORT
-            Sub0buSTargets
+            Sub0ReflectTargets
         DESTINATION 
             ${CMAKE_INSTALL_LIBDIR}
             
@@ -106,9 +106,9 @@ if (NOT IS_SUBPROJECT)
     # @todo Gain understanding for what this is doing - is it generating cmake for the targets?
     install(
         EXPORT
-            Sub0buSTargets
+            Sub0ReflectTargets
         NAMESPACE
-            Sub0buS::
+            Sub0Reflect::
         DESTINATION
             ${SUB0BUS_CMAKE_CONFIG_DESTINATION}
     )
@@ -116,8 +116,8 @@ if (NOT IS_SUBPROJECT)
     # Install version and config    
     install(
         FILES 
-            "${PROJECT_BINARY_DIR}/Sub0buSConfigVersion.cmake"
-            "${PROJECT_BINARY_DIR}/Sub0buSConfig.cmake"
+            "${PROJECT_BINARY_DIR}/Sub0ReflectConfigVersion.cmake"
+            "${PROJECT_BINARY_DIR}/Sub0ReflectConfig.cmake"
         DESTINATION 
             "${SUB0BUS_CMAKE_CONFIG_DESTINATION}"
     )
