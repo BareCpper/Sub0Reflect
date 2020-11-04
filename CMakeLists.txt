@@ -1,6 +1,5 @@
-# @note 3.7.1 as version use in WIndows Git-Bash
 # @todo >3.10 needed for include(GoogleTest)?
-cmake_minimum_required(VERSION 3.7.1)
+cmake_minimum_required(VERSION 3.15)
 
 # Detect if Sub0Reflect is being included inside another project
 # - We can disable test generation etc.
@@ -10,17 +9,13 @@ endif()
 
 project(Sub0Reflect VERSION 0.1.2 LANGUAGES CXX )
 
-set(CMAKE_CXX_STANDARD 98)
 
 # Provide path for scripts
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMake")
 
 #include(GNUInstallDirs)
 
-# @todo Should set cmake 3.10
-#include(GoogleTest)
 
-#option(SUB0BUS_USE_VALGRIND "Perform SelfTests with Valgrind" OFF)
 option(SUB0BUS_BUILD_TESTING "Build unit-tests" ON)
 option(SUB0BUS_BUILD_EXAMPLES "Build examples" ON)
 #option(SUB0BUS_ENABLE_COVERAGE "Generate coverage for unit-tests" OFF)
@@ -31,22 +26,19 @@ option(SUB0BUS_BUILD_EXAMPLES "Build examples" ON)
 # @todo Organise targets into folders i.e Tests etc
 #set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(SUB0BUS_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-set(UNITTEST_DIRECTORY ${SUB0BUS_DIRECTORY}/test)
+set(UNITTEST_DIRECTORY ${SUB0BUS_DIRECTORY}/tests)
 set(BENCHMARK_DIRECTORY ${SUB0BUS_DIRECTORY}/benchmark)
 set(INCLUDE_DIRECTORY ${SUB0BUS_DIRECTORY}/include)
 
-if (BUILD_TESTING AND SUB0BUS_BUILD_TESTING AND NOT_SUBPROJECT)
-    add_subdirectory(projects)
-endif()
+enable_testing()
+add_subdirectory(tests)
 
-if(SUB0BUS_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+add_subdirectory(examples)
 
 # Sub0Reflect as header only target
 # + Namespaced alias for linking against core library from client
 add_library(Sub0Reflect INTERFACE)
-add_library(Sub0Reflect::Sub0Reflect ALIAS Sub0Reflect)
+add_library(Sub0::Reflect ALIAS Sub0Reflect)
 
 target_include_directories(Sub0Reflect
   INTERFACE
@@ -108,7 +100,7 @@ if (NOT IS_SUBPROJECT)
         EXPORT
             Sub0ReflectTargets
         NAMESPACE
-            Sub0Reflect::
+            Sub0::Reflect
         DESTINATION
             ${SUB0BUS_CMAKE_CONFIG_DESTINATION}
     )

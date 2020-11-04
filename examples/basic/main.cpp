@@ -14,73 +14,56 @@ namespace test
         int32_t c;
     };
 
-
+#if 1
+    SUB0_REFLECT(Point, a, b, c); //< @note Expands to what is shown below
+#else
     struct sub0_Reflect_Point
     {
         using a = sub0::MemberTie<decltype(Point::a) Point::*, &Point::a>;
-        [[nodiscard]] constexpr std::string_view name(a) noexcept { return "a"; }
+        [[nodiscard]] static constexpr std::string_view name(a) noexcept { return "a"; }
 
         using b = sub0::MemberTie<decltype(Point::b) Point::*, &Point::b>;
-        [[nodiscard]] constexpr std::string_view name(b) noexcept { return "b"; }
+        [[nodiscard]] static constexpr std::string_view name(b) noexcept { return "b"; }
 
         using c = sub0::MemberTie<decltype(Point::c) Point::*, &Point::c>;
-        [[nodiscard]] constexpr std::string_view name(c) noexcept { return "c"; }
+        [[nodiscard]] static constexpr std::string_view name(c) noexcept { return "c"; }
 
         [[nodiscard]] static constexpr auto members() { return std::tuple<a, b, c>(); }
+        [[nodiscard]] static constexpr std::string_view name() { return "Point"; };
+        [[nodiscard]] static constexpr std::size_t size() { return sizeof(Point); };
     };
-    constexpr sub0_Reflect_Point reflect(Point) { return {}; };
-    constexpr std::string_view name(sub0_Reflect_Point) { return "Point"; };
-
+    constexpr sub0_Reflect_Point sub0_reflect(Point) { return {}; };
+#endif
 
     struct Triangle
     {
         Point a, b, c;
     };
-
-
-    #define SUB0_FIRST_ARG(arg,...) arg
-#define SUB0_STRINGIFY( a ) #a 
-
-    #define SUB0_REFLECT_FIELD( member ) \
-        using member = sub0::MemberTie<decltype(type_t::member) type_t::*, &type_t::member>; \
-        [[nodiscard]] constexpr std::string_view name(member) noexcept { return SUB0_STRINGIFY(member); }
-
-    #define sub0_reflect( T, ... ) \
-        struct sub0_Reflect_##T { \
-            using type_t = T; \
-            [[nodiscard]] static constexpr auto members() { return std::tuple<__VA_ARGS__>(); } \
-            SUB0_REFLECT_FIELD( SUB0_FIRST_ARG(__VA_ARGS__) )
-
-
-    #define SUB0_REFLECT_END( T ) \
-    }; \
-    constexpr sub0_Reflect_##T reflect(T) { return {}; }; \
-    constexpr std::string_view name(sub0_Reflect_##T) { return #T; };
-
+    
 #if 1
-    sub0_reflect(Triangle, a, b, c); //< @todo Expnd to to that shown below!
-  
-    SUB0_REFLECT_FIELD(b);
-    SUB0_REFLECT_FIELD(c);
-    SUB0_REFLECT_END(Triangle);
+    SUB0_REFLECT(Triangle, a, b, c); //< @note Expands to what is shown below
 #else
     struct sub0_Reflect_Triangle
     {
+        using type = sub0_Reflect_Triangle;
+
         using a = sub0::MemberTie<decltype(Triangle::a) Triangle::*, &Triangle::a>;
-        [[nodiscard]] constexpr std::string_view name(a) noexcept { return "a"; }
+        [[nodiscard]] static constexpr std::string_view name(a) noexcept { return "a"; }
 
         using b = sub0::MemberTie<decltype(Triangle::b) Triangle::*, &Triangle::b>;
-        [[nodiscard]] constexpr std::string_view name(b) noexcept { return "b"; }
+        [[nodiscard]] static constexpr std::string_view name(b) noexcept { return "b"; }
 
         using c = sub0::MemberTie<decltype(Triangle::c) Triangle::*, &Triangle::c>;
-        [[nodiscard]] constexpr std::string_view name(c) noexcept { return "c"; }
+        [[nodiscard]] static constexpr std::string_view name(c) noexcept { return "c"; }
 
         [[nodiscard]] static constexpr auto members() { return std::tuple<a, b, c>(); }
+        [[nodiscard]] static constexpr std::string_view name() { return "Triangle"; };
+        [[nodiscard]] static constexpr std::size_t size() { return sizeof(Triangle); };
     };
-    constexpr sub0_Reflect_Triangle reflect(Triangle) { return {}; };
-    constexpr std::string_view name(sub0_Reflect_Triangle) { return "Triangle"; };
+    constexpr sub0_Reflect_Triangle sub0_reflect(Triangle) { return {}; };
 #endif
 }
+
 
 template< typename T >
 void testReflectPrint( T& p )
@@ -124,7 +107,30 @@ void testReflectPrintEx(T& p)
 int main ()
 {
     using namespace test;
-       
+
+#if 0
+    const Point p = { 11, 22, 33 };
+
+    auto p_Reflect = sub0::reflect(p);
+
+   // auto p_tied = sub0::tie(cP, pointReflection.members())
+
+    static_assert(p.a == 11);
+    static_assert(sub0::tie<decltype(p_Reflect)::a>(p) == 11);
+    static_assert(decltype(p_Reflect)::a().name() == std::string_view("a"));
+
+
+
+  /*  std::apply([](auto&... member) {
+        ...
+        }, p_tied);*/
+
+    Point_Reflect::a a;
+    std::cout << a.name();
+    //static_assert(p_tied)
+#endif
+
+#if 0
     const Point p = { 11, 22, 33 };
     std::tuple<Point, const Point, Point> points =
     {
@@ -153,6 +159,7 @@ int main ()
         (testReflectPrintEx(p), ...);
         }, tris);
 
+#endif
+
     return 0;// a(p) + b(p);
 }
-
