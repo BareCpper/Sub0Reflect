@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.11)
 
 # Provide some groupings for IDEs
 #SOURCE_GROUP("benchmark" FILES ${BENCHMARK_HEADERS} ${BENCHMARK_SOURCES})
@@ -6,7 +6,6 @@ cmake_minimum_required(VERSION 3.1)
 
 
 include( ${PROJECT_SOURCE_DIR}/cmake/GTest.cmake)
-#find_package(GTest CONFIG REQUIRED)
 
 add_executable( Sub0_Reflect_SelfTest "" )
 add_executable( Sub0::Reflect::SelfTest ALIAS Sub0_Reflect_SelfTest )
@@ -14,12 +13,12 @@ add_executable( Sub0::Reflect::SelfTest ALIAS Sub0_Reflect_SelfTest )
 target_sources( Sub0_Reflect_SelfTest
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/test_types.hpp"  
-        "${CMAKE_CURRENT_LIST_DIR}/test_constexpr.cpp"      
+        "${CMAKE_CURRENT_LIST_DIR}/test_constexpr.cpp"  
 )
 target_link_libraries(Sub0_Reflect_SelfTest
     PUBLIC
         Sub0::Reflect
-        gtest_main
+        GTest::Main
 )
 target_compile_features(Sub0_Reflect_SelfTest PRIVATE cxx_std_17)
 
