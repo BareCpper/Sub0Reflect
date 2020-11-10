@@ -2,6 +2,7 @@
 
 #include "sub0reflect/sub0reflect.hpp"
 
+#if 0
 
 
 namespace test
@@ -104,11 +105,12 @@ void testReflectPrintEx(T& p)
 }
 
 
+#endif
 int main ()
 {
-    using namespace test;
 
 #if 0
+    using namespace test;
     const Point p = { 11, 22, 33 };
 
     auto p_Reflect = sub0::reflect(p);

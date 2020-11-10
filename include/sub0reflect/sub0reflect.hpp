@@ -77,21 +77,16 @@
 
 /// SUB0_REFLECT( Type, {members...} )
 #ifndef SUB0_REFLECT
-#define SUB0_REFLECT_FIELD( member ) \
-    using member = sub0::MemberTie<decltype(type::member) type::*, &type::member>; \
-    [[nodiscard]] constexpr std::string_view name(member) noexcept { return SUB0_STRINGIFY(member); }
+#define SUB0_REFLECT_MEMBER( MEMBER ) \
+    using MEMBER = sub0::MemberTie<decltype(Owner_t::MEMBER) Owner_t::*, &Owner_t::MEMBER>; \
+    [[nodiscard]] constexpr std::string_view name(MEMBER) noexcept { return SUB0_STRINGIFY(MEMBER); }
 
 #define SUB0_REFLECT( T, ... ) \
-    struct sub0_Reflect_##T { \
-        using type = T; \
-        [[nodiscard]] static constexpr auto members() noexcept { return std::tuple<__VA_ARGS__>(); } \
-        /** @{ MemberTie types */ \
-        SUB0_MAP( SUB0_REFLECT_FIELD, __VA_ARGS__ ) \
-        /** @} */ \
-        [[nodiscard]] static constexpr std::string_view name() noexcept { return #T; }; \
-        [[nodiscard]] static constexpr std::size_t size() noexcept { return sizeof(T); }; \
-    }; \
-    constexpr sub0_Reflect_##T sub0_reflect(T) { return {}; }; 
+    namespace sub0_Reflect_##T { \
+        using Owner_t = T; \
+        SUB0_MAP( SUB0_REFLECT_MEMBER, __VA_ARGS__ ) }; \
+    [[nodiscard]] static constexpr auto sub0_members(T) noexcept { using namespace sub0_Reflect_##T; return std::tuple<__VA_ARGS__>(); }; \
+    [[nodiscard]] static constexpr std::string_view sub0_name(T) noexcept { return #T; };
 #endif
 
 /** Sub0Pub top-level namespace
@@ -240,16 +235,15 @@ namespace sub0
         return reflect(Owner_t()).name(MemberTie< Type_t(Owner_t::*), MemPtr>());
     }
 
-    template <class Owner_t>
-    struct Reflect
-    {
-        using type = decltype(sub0_reflect(std::declval<Owner_t>()));
-    };
 
-    /** eflection type for given owner type
+    /** Reflection type for given owner type
     */
     template <class Owner_t>
-    using reflect_t = typename Reflect<std::remove_reference_t<typename Owner_t>>::type;
+    struct reflect_t
+    {
+        using type = Owner_t;
+        static constexpr std::string_view name() { return sub0_name(Owner_t()); }
+    };
 
     /** Instantiate reflection over the given object instance
     */
@@ -257,6 +251,12 @@ namespace sub0
     constexpr auto reflect(Owner_t instance)
     {
         return reflect_t<Owner_t>(instance);
+    }
+
+    template<typename Owner_t>
+    constexpr const char* name(Owner_t instance = {})
+    {
+        return reflect_t<Owner_t>::name; 
     }
 
 } // END: sub0

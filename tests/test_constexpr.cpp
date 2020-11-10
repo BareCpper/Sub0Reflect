@@ -15,27 +15,30 @@ namespace Test
     TEST(constexpr, sub0_reflect_t_type)
     {
         using Reflect_t = sub0::reflect_t<test::Point>;
-
         static_assert(std::is_same_v<Reflect_t::type, test::Point>);
-
         EXPECT_TRUE(true); ///< @note static_assert pass
     }
 
     TEST(constexpr, sub0_reflect_t_name)
     {
         using Reflect_t = sub0::reflect_t<test::Point>;
-
+        static_assert(sub0_name(test::Point()) == "Point");
         static_assert(Reflect_t::name() == "Point");
-
+        //static_assert(name<Reflect_t>() == "Point");
         EXPECT_TRUE(true); ///< @note static_assert pass
     }
 
-    TEST(constexpr, sub0_reflect_t_size)
-    {
-        using Reflect_t = sub0::reflect_t<test::Point>;
-
-        static_assert(Reflect_t::size() == sizeof(test::Point));
-
-        EXPECT_TRUE(true); ///< @note static_assert pass
-    }
+  //TEST(constexpr, sub0_reflect_t_size)
+  //{
+  //    using Reflect_t = sub0::reflect_t<test::Point>;
+  //    static_assert(Reflect_t::size() == sizeof(test::Point));
+  //    EXPECT_TRUE(true); ///< @note static_assert pass
+  //}
+  //
+  //TEST(constexpr, sub0_reflect_t_members_size)
+  //{
+  //    using Reflect_t = sub0::reflect_t<test::Point>;
+  //    static_assert(std::tuple_size_v<Reflect_t::members> == 3);
+  //    EXPECT_TRUE(true); ///< @note static_assert pass
+  //}
 }

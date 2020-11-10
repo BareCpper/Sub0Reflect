@@ -10,5 +10,6 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
 
-add_library(  GTest::Main ALIAS gtest_main )
-add_library(  GTest::GTest ALIAS gtest )
+# Alias same as fiindGTest()
+add_library( GTest::Main ALIAS gtest_main )
+add_library( GTest::GTest ALIAS gtest )
