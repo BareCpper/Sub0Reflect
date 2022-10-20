@@ -50,11 +50,14 @@ if ( ${SUB0REFLECT_BUILD_TESTING} )
 endif()
 
 add_subdirectory(tests)
-set_property(DIRECTORY tests PROPERTY EXCLUDE_FROM_ALL ${SUB0REFLECT_BUILD_TESTING})
+if ( NOT SUB0REFLECT_BUILD_TESTING)
+    set_property(DIRECTORY tests PROPERTY EXCLUDE_FROM_ALL)
+endif()
 
 add_subdirectory(examples)
-set_property(DIRECTORY examples PROPERTY EXCLUDE_FROM_ALL ${SUB0REFLECT_BUILD_EXAMPLES})
-
+if ( NOT SUB0REFLECT_BUILD_EXAMPLES)
+    set_property(DIRECTORY examples PROPERTY EXCLUDE_FROM_ALL)
+endif()
 
 # Install project if not included by add_subdirecrory(Sub0Reflect) from another project
 #if (SUB0REFLECT_ISNOT_SUBPROJECT)

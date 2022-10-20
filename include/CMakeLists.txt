@@ -12,9 +12,8 @@ target_compile_features( sub0reflect
 
 target_include_directories(sub0reflect 
     INTERFACE 
-        ".." 
-        #$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        #$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
 target_sources( sub0reflect 

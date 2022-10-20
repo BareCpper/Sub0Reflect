@@ -14,8 +14,8 @@ namespace NS1 {
             struct PartialReflected
             {
                 int foo;
-                unsigned int bar;
-                float baz; //< NOT Reflected
+                unsigned int bar; //< NOT Reflected
+                float baz;
             };
 
             struct NotReflection
@@ -33,7 +33,7 @@ namespace NS1 {
 }
 
 SUB0REFLECT_REFLECT(NS1::NS2::NS3::FullReflected, foo, bar, baz);
-SUB0REFLECT_REFLECT(NS1::NS2::NS3::PartialReflected, foo, bar); //< @note `baz` is NOT reflected
+SUB0REFLECT_REFLECT(NS1::NS2::NS3::PartialReflected, foo, /* @note `bar` is NOT reflected*/ baz); 
 SUB0REFLECT_REFLECT(NS1::NS2::NS3::TemplateReflection<true>, foo, bar, baz);
 SUB0REFLECT_REFLECT(NS1::NS2::NS3::TemplateReflection<false>, foo, bar, baz);
 
@@ -57,33 +57,44 @@ static_assert(false == sub0reflect::isPartial<NS1::NS2::NS3::NotReflection>());
 
 constexpr auto reflection = sub0reflect::reflect<NS1::NS2::NS3::FullReflected>{};
 static_assert(reflection.name() == "NS1::NS2::NS3::FullReflected");
-constexpr auto mems = reflection.members();
-static_assert(std::tuple_size<decltype(mems)>() == 2);
 
-/// Mirror - From Reflection
-constexpr auto mirror = reflection.mirror();
-static_assert(mirror.bar.name() == "bar");
-static_assert(mirror.baz.name() == "baz");
-
-/// Index of Member - By Name
-constexpr auto iPpgMem = reflection.index("bar");
-constexpr auto iProximityMem = reflection.index("baz");
-static_assert(iPpgMem == 0);
-static_assert(iProximityMem == 1);
+constexpr auto partialReflection = sub0reflect::reflect<NS1::NS2::NS3::PartialReflected>{};
+static_assert(partialReflection.name() == "NS1::NS2::NS3::PartialReflected");
 
 /// Member-Names - From Reflection
 constexpr auto memNames = reflection.memberNames();
+static_assert(std::get<0>(memNames) == "foo");
+static_assert(std::get<1>(memNames) == "bar");
+static_assert(std::get<2>(memNames) == "baz");
+
+#if 0 // @todo We should also support automatic reflection (i.e. Structured binding approach @see `as_tuple`)
+constexpr auto partialMemNames = partialReflection.memberNames();
+#endif
+
+constexpr auto mems = reflection.members();
+static_assert(std::tuple_size<decltype(mems)>() == 3);
 static_assert(std::get<0>(mems).name() == std::get<0>(memNames));
 static_assert(std::get<1>(mems).name() == std::get<1>(memNames));
-static_assert(memNames[iPpgMem] == "bar" && memNames[iProximityMem] == "baz");
+static_assert(std::get<2>(mems).name() == std::get<2>(memNames));
+
+/// Mirror - From Reflection
+constexpr auto mirror = reflection.mirror();
+static_assert(mirror.foo.name() == std::get<0>(memNames));
+static_assert(mirror.bar.name() == std::get<1>(memNames));
+static_assert(mirror.baz.name() == std::get<2>(memNames));
+
+/// Index of Member - By Name
+static_assert(reflection.index(std::get<0>(memNames)) == 0);
+static_assert(reflection.index(std::get<1>(memNames)) == 1);
+static_assert(reflection.index(std::get<2>(memNames)) == 2);
 
 constexpr NS1::NS2::NS3::FullReflected testData = { 123,456 };
 
 /// Tie Member - From Members
-static_assert(std::get<iPpgMem>(mems)(testData) == testData.bar, "Tied value == input instance");
-static_assert(std::get<iProximityMem>(mems)(testData) == testData.baz, "Tied value== input instance");
-static_assert(&std::get<iPpgMem>(mems)(testData) == &testData.bar, "Tied value is reference to input instance");
-static_assert(&std::get<iProximityMem>(mems)(testData) == &testData.baz, "Tied value is reference to input instance");
+static_assert(std::get<0>(mems)(testData) == testData.foo, "Tied value == input instance");
+static_assert(std::get<1>(mems)(testData) == testData.bar, "Tied value == input instance");
+static_assert(&std::get<0>(mems)(testData) == &testData.foo, "Tied value is reference to input instance");
+static_assert(&std::get<1>(mems)(testData) == &testData.bar, "Tied value is reference to input instance");
 
 /// Bind - From Reflection
 constexpr auto bound = reflection(testData);
@@ -91,10 +102,10 @@ static_assert(&bound.instance == &testData);
 
 /// Tie Member - From Bound
 constexpr auto boundMems = bound.members();
-static_assert(*std::get<iPpgMem>(boundMems) == testData.bar, "Tied value == input instance");
-static_assert(*std::get<iProximityMem>(boundMems) == testData.baz, "Tied value == input instance");
-static_assert(&*std::get<iPpgMem>(boundMems) == &testData.bar, "Tied value is reference to input instance");
-static_assert(&*std::get<iProximityMem>(boundMems) == &testData.baz, "Tied value is reference to input instance");
+static_assert(*std::get<1>(boundMems) == testData.bar, "Tied value == input instance");
+static_assert(*std::get<2>(boundMems) == testData.baz, "Tied value == input instance");
+static_assert(&*std::get<1>(boundMems) == &testData.bar, "Tied value is reference to input instance");
+static_assert(&*std::get<2>(boundMems) == &testData.baz, "Tied value is reference to input instance");
 
 /// Tie Member - From Mirror
 static_assert(mirror.bar(testData) == testData.bar, "Tied value ==input instance");
