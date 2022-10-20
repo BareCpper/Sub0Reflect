@@ -369,7 +369,7 @@ namespace sub0reflect
 
     };
 
-    /** Compile-time check for when explicit CPPREFLECT17_REFLECT_T() or CPPREFLECT17_REFLECT() has been provided for member-names
+    /** Compile-time check for when explicit SUB0REFLECT_REFLECT_T() or SUB0REFLECT_REFLECT() has been provided for member-names
     */
     template <typename T>
     constexpr bool hasExplicitReflection() noexcept
@@ -377,7 +377,7 @@ namespace sub0reflect
         return internal::member_meta<T>::hasExplicit;
     }
 
-    /** Compile-time check for when no CPPREFLECT17_REFLECT_T() or CPPREFLECT17_REFLECT() has been provided for member-names
+    /** Compile-time check for when no SUB0REFLECT_REFLECT_T() or SUB0REFLECT_REFLECT() has been provided for member-names
     */
     template <typename T>
     constexpr bool hasImplicitReflection() noexcept
