@@ -1,0 +1,39 @@
+#pragma once
+
+#ifndef SUB0REFLECT_STRINGIFY
+    #define SUB0REFLECT_STRINGIFY( a ) #a 
+#endif
+
+#ifndef SUB0REFLECT_EVAL
+    #define SUB0REFLECT_EVAL0(...) __VA_ARGS__
+    #define SUB0REFLECT_EVAL1(...) SUB0REFLECT_EVAL0(SUB0REFLECT_EVAL0(SUB0REFLECT_EVAL0(__VA_ARGS__)))
+    #define SUB0REFLECT_EVAL2(...) SUB0REFLECT_EVAL1(SUB0REFLECT_EVAL1(SUB0REFLECT_EVAL1(__VA_ARGS__)))
+    #define SUB0REFLECT_EVAL3(...) SUB0REFLECT_EVAL2(SUB0REFLECT_EVAL2(SUB0REFLECT_EVAL2(__VA_ARGS__)))
+    #define SUB0REFLECT_EVAL4(...) SUB0REFLECT_EVAL3(SUB0REFLECT_EVAL3(SUB0REFLECT_EVAL3(__VA_ARGS__)))
+    #define SUB0REFLECT_EVAL(...) SUB0REFLECT_EVAL4(SUB0REFLECT_EVAL4(SUB0REFLECT_EVAL4(__VA_ARGS__)))
+#endif
+
+#ifndef SUB0REFLECT_MAP
+    #define SUB0REFLECT_END(...)
+    #define SUB0REFLECT_OUT
+
+    #define SUB0REFLECT_EMPTY() 
+    #define SUB0REFLECT_DEFER(id) id SUB0REFLECT_EMPTY()
+
+    #define SUB0REFLECT_MAP_END2() 0, SUB0REFLECT_END
+    #define SUB0REFLECT_MAP_END1(...) SUB0REFLECT_MAP_END2
+    #define SUB0REFLECT_MAP_END(...) SUB0REFLECT_MAP_END1
+    #define SUB0REFLECT_MAP_NEXT0(test, next, ...) next SUB0REFLECT_OUT
+    #define SUB0REFLECT_MAP_NEXT1(test, next) SUB0REFLECT_DEFER ( SUB0REFLECT_MAP_NEXT0 ) ( test, next, 0)
+    #define SUB0REFLECT_MAP_NEXT(test, next)  SUB0REFLECT_MAP_NEXT1(SUB0REFLECT_MAP_END test, next)
+    #define SUB0REFLECT_MAP0(f, x, peek, ...) f(x) SUB0REFLECT_DEFER ( SUB0REFLECT_MAP_NEXT(peek, SUB0REFLECT_MAP1) ) ( f, peek, __VA_ARGS__ ) 
+    #define SUB0REFLECT_MAP1(f, x, peek, ...) f(x) SUB0REFLECT_DEFER ( SUB0REFLECT_MAP_NEXT(peek, SUB0REFLECT_MAP0) ) ( f, peek, __VA_ARGS__ )
+
+    /**  `Map` like For-Each on a Variadic macro
+     * @todo DOC: This was inspired by some stackoverflow somewhere!
+     * @code 
+     * SUB0REFLECT_MAP( ForEachMacro, __VA_ARGS__ ) };
+     * @endcode 
+    */
+    #define SUB0REFLECT_MAP(f, ...) SUB0REFLECT_EVAL(SUB0REFLECT_MAP1(f, __VA_ARGS__, ()()(), ()()(), ()()(), 0))
+#endif

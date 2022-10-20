@@ -1,264 +1,405 @@
-/** Sub0Reflect core header-only library
- * @remark Simple and Lightweight Parser-less C++17 Reflection at Compile-time - Programmatically describe simple struct memory-layout or interface-definition
- * 
- *  This file is part of Sub0Pub. Original project source available at https://github.com/Crog/Sub0Pub/blob/master/sub0pub.hpp
- * 
- *  MIT License
- *
- * Copyright (c) 2020 Craig Hutchinson <craig-sub0reflect@crog.uk>
- *
- *  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files 
- *  (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, 
- *  publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do 
- *  so, subject to the following conditions:
- * 
- *  The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- * 
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
- *  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
- *  FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
- *  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-#ifndef CROG_SUB0BUS_HPP
-#define CROG_SUB0BUS_HPP
+#pragma once
 
-//#include <algorithm>
-//#include <cassert> //< assert
-//#include <cstring> //< std::strcmp
-#include <array> //< std::array
-#include <tuple> //< std::tie
-#include <type_traits> //< std::remove_all_extents_t
-#include <functional> //< std::mem_fn
+#include "arity.hpp"
+#include "as_tuple.hpp"
+#include "preprocessor.hpp"
+#include "type_name.hpp"
+#include "static_assert_equal.hpp"
 
- /// @todo 0 vs nullptr C++11 only
-#if 1 /// @todo cstdint not always available ... C++11/C99 only 
-    #include <cstdint> //< uint32_t
-#else
-    typedef unsigned char uint8_t;
-    typedef unsigned int uint32_t;
+#include <cstdlib>
+#include <memory> //< std::unique_ptr
+#include <stdexcept> //< std::invalid_argument
+
+#ifdef __GNUG__
+    #include <cxxabi.h> //< __cxa_demangle
 #endif
 
-#ifndef SUB0_EXPERIMENTAL
-#define SUB0_EXPERIMENTAL false ///< Experimental functionality that may be later removed/dropped
-#endif
 
-#ifndef SUB0_STRINGIFY
-#define SUB0_STRINGIFY( a ) #a 
-#endif
+namespace sub0reflect {
+namespace internal {
+    /** Type 'mirrors' the reflected struct with named members `struct membertie_type_mirror<T>{ using mem1 = MemberTie<T...>, ...; }`
+    * @code
+    *   membertie_type_mirror<T> foo; 
+    *   static_assert( foo.member1.name() == "member1" )
+    * @endcode
+    */
+    template< typename T>
+    struct membertie_type_mirror;
 
-#ifndef SUB0_EVAL
-#define SUB0_EVAL0(...) __VA_ARGS__
-#define SUB0_EVAL1(...) SUB0_EVAL0(SUB0_EVAL0(SUB0_EVAL0(__VA_ARGS__)))
-#define SUB0_EVAL2(...) SUB0_EVAL1(SUB0_EVAL1(SUB0_EVAL1(__VA_ARGS__)))
-#define SUB0_EVAL3(...) SUB0_EVAL2(SUB0_EVAL2(SUB0_EVAL2(__VA_ARGS__)))
-#define SUB0_EVAL4(...) SUB0_EVAL3(SUB0_EVAL3(SUB0_EVAL3(__VA_ARGS__)))
-#define SUB0_EVAL(...) SUB0_EVAL4(SUB0_EVAL4(SUB0_EVAL4(__VA_ARGS__)))
-#endif
-
-/// SUB0_MAP(f, ...)
-#ifndef SUB0_MAP
-#define SUB0_END(...)
-#define SUB0_OUT
-
-#define SUB0_EMPTY() 
-#define SUB0_DEFER(id) id SUB0_EMPTY()
-
-#define SUB0_MAP_END2() 0, SUB0_END
-#define SUB0_MAP_END1(...) SUB0_MAP_END2
-#define SUB0_MAP_END(...) SUB0_MAP_END1
-#define SUB0_MAP_NEXT0(test, next, ...) next SUB0_OUT
-#define SUB0_MAP_NEXT1(test, next) SUB0_DEFER ( SUB0_MAP_NEXT0 ) ( test, next, 0)
-#define SUB0_MAP_NEXT(test, next)  SUB0_MAP_NEXT1(SUB0_MAP_END test, next)
-#define SUB0_MAP0(f, x, peek, ...) f(x) SUB0_DEFER ( SUB0_MAP_NEXT(peek, SUB0_MAP1) ) ( f, peek, __VA_ARGS__ ) 
-#define SUB0_MAP1(f, x, peek, ...) f(x) SUB0_DEFER ( SUB0_MAP_NEXT(peek, SUB0_MAP0) ) ( f, peek, __VA_ARGS__ )
-
-#define SUB0_MAP(f, ...) SUB0_EVAL(SUB0_MAP1(f, __VA_ARGS__, ()()(), ()()(), ()()(), 0))
-#endif
-
-/// SUB0_REFLECT( Type, {members...} )
-#ifndef SUB0_REFLECT
-#define SUB0_REFLECT_MEMBER( MEMBER ) \
-    using MEMBER = sub0::MemberTie<decltype(Owner_t::MEMBER) Owner_t::*, &Owner_t::MEMBER>; \
-    [[nodiscard]] constexpr std::string_view name(MEMBER) noexcept { return SUB0_STRINGIFY(MEMBER); }
-
-#define SUB0_REFLECT( T, ... ) \
-    namespace sub0_Reflect_##T { \
-        using Owner_t = T; \
-        SUB0_MAP( SUB0_REFLECT_MEMBER, __VA_ARGS__ ) }; \
-    [[nodiscard]] static constexpr auto sub0_members(T) noexcept { using namespace sub0_Reflect_##T; return std::tuple<__VA_ARGS__>(); }; \
-    [[nodiscard]] static constexpr std::string_view sub0_name(T) noexcept { return #T; };
-#endif
-
-/** Sub0Pub top-level namespace
-*/
-namespace sub0
-{
-
+    /** Meta data storage type
+    * @remark Stores all meta-data that cannot be determined at compile time and is provided via user Macros `SUB0REFLECT_REFLECT_IMPL`
+    */
+    template< typename T>
+    struct member_meta { 
+        static constexpr bool hasExplicit = false;
+    };
 
     template <typename T, T> struct MemberTie;
+    template <typename T, T> struct InstanceMemberTie;
+    template <typename T, T> struct ConstInstanceMemberTie;
 
-    template <typename Type_t, typename Owner_t, Type_t(Owner_t:: * MemPtr)>
-    struct MemberTie< Type_t(Owner_t::*), MemPtr>
+    template <typename Member_t, typename Owner_t, Member_t(Owner_t::* MemPtr)>
+    struct MemberTie< Member_t(Owner_t::*), MemPtr>
     {
-        using type_t = Type_t;
+        using this_t = MemberTie;
+        using type_t = Member_t;
+        using owner_t = Owner_t;
+        using tie_t = InstanceMemberTie<Member_t(Owner_t::*), MemPtr>;
+        using const_tie_t = ConstInstanceMemberTie<Member_t(Owner_t::*), MemPtr>;
+        /** Get members name
+        */
+        [[nodiscard]] static constexpr std::string_view name() noexcept {
+            return member_meta<owner_t>::name(this_t{});
+        }
+
+        [[nodiscard]] static constexpr const_tie_t tie(const owner_t& instance ) noexcept
+        {
+            return { instance };
+        }
+
+        [[nodiscard]] static constexpr tie_t tie( owner_t& instance) noexcept
+        {
+            return { instance };
+        }
+
+        [[nodiscard]] static constexpr const type_t& ref(const owner_t& instance) noexcept
+        {
+            return *tie(instance);
+        }
+
+        [[nodiscard]] static constexpr type_t& ref(owner_t& instance) noexcept
+        {
+            return *tie(instance);
+        }
+
+    public: //< Instance functions
+
+        /** Reference members value on instance
+        */
+        [[nodiscard]] constexpr type_t& operator()(owner_t& instance) noexcept
+        {
+            return instance.*MemPtr;
+        }
+
+        /** Reference members value on instance
+        */
+        [[nodiscard]] constexpr const type_t& operator()(const owner_t& instance) const noexcept
+        {
+            return instance.*MemPtr;
+        }
+    };
+
+    template <typename Member_t, typename Owner_t, Member_t(Owner_t::* MemPtr)>
+    struct InstanceMemberTie< Member_t(Owner_t::*), MemPtr> : MemberTie< Member_t(Owner_t::*), MemPtr>
+    {
+        using this_t = InstanceMemberTie;
+        using type_t = Member_t;
         using owner_t = Owner_t;
 
-        /** Convenience member function @see sub0::tie(MemberTie) */
-        constexpr type_t& operator()(Owner_t& instance) noexcept
-        {
-            return sub0::tie_value(instance, *this);
-        }
+        owner_t& instance;
 
-        constexpr const type_t& operator()(const Owner_t& instance) noexcept
-        {
-            return sub0::tie_value(instance, *this);
-        }
+        constexpr InstanceMemberTie(owner_t& instance)
+            : instance(instance)
+        {}
 
-        /** Convenience member function @see sub0::name(MemberTie) */
-        constexpr std::string_view name() const noexcept
-        {
-            return sub0::name(*this);
-        }
-
-    };
-
-    template <typename T, T> struct InstanceMemberTie;
-
-    template <typename Type_t, typename Owner_t, Type_t(Owner_t:: * MemPtr)>
-    struct InstanceMemberTie< Type_t(Owner_t::*), MemPtr> : MemberTie< Type_t(Owner_t::*), MemPtr>
-    {
-        Owner_t& instance;
-
-        InstanceMemberTie(Owner_t& instance) : instance(instance) {}
-
-        constexpr operator Type_t& ()
+        /** Reference members value on instance
+        */
+        [[nodiscard]] constexpr type_t& operator()() noexcept
         {
             return instance.*MemPtr;
         }
 
-        constexpr Type_t& operator*()
+        [[nodiscard]] constexpr type_t& operator*() noexcept
         {
             return instance.*MemPtr;
         }
 
-        constexpr operator const Type_t& () const
+        /** Reference members value on instance
+        */
+        [[nodiscard]] constexpr const type_t& operator()() const noexcept
         {
             return instance.*MemPtr;
         }
 
-        constexpr const Type_t& operator*() const
+        [[nodiscard]] constexpr const type_t& operator*() const noexcept
         {
             return instance.*MemPtr;
         }
     };
-
-    template <typename T, T> struct ConstInstanceMemberTie;
-    template <typename Type_t, typename Owner_t, Type_t(Owner_t:: * MemPtr)>
-    struct ConstInstanceMemberTie< Type_t(Owner_t::*), MemPtr> : MemberTie< Type_t(Owner_t::*), MemPtr>
+    template <typename Member_t, typename Owner_t, Member_t(Owner_t::* MemPtr)>
+    struct ConstInstanceMemberTie< Member_t(Owner_t::*), MemPtr> : MemberTie< Member_t(Owner_t::*), MemPtr>
     {
-        const Owner_t& instance;
+        using this_t = ConstInstanceMemberTie;
+        using type_t = Member_t;
+        using owner_t = Owner_t;
 
-        ConstInstanceMemberTie(const Owner_t& instance) : instance(instance) {}
+        const owner_t& instance;
 
-        constexpr operator const Type_t& () const
+        constexpr ConstInstanceMemberTie(const owner_t& instance)
+            : instance(instance)
+        {}
+
+        /** Reference members value on instance
+        */
+        [[nodiscard]] constexpr const type_t& operator()() const noexcept
         {
             return instance.*MemPtr;
         }
 
-        constexpr const Type_t& operator*() const
+        [[nodiscard]] constexpr const type_t& operator*() const noexcept
         {
             return instance.*MemPtr;
         }
     };
 
-    ///sub0::tie - tie a MemberTie to an instance of Owner_t type
-    template<typename Type_t, typename Owner_t, Type_t(Owner_t:: * MemPtr)>
-    constexpr auto tie(Owner_t& instance, MemberTie< Type_t(Owner_t::*), MemPtr> = {}) noexcept
-    {
-        return InstanceMemberTie< Type_t(Owner_t::*), MemPtr>(instance);
-    }
-
-    ///sub0::tie - tie a MemberTie to an instance of Owner_t type
-    template<typename Type_t, typename Owner_t, Type_t(Owner_t:: * MemPtr)>
-    constexpr auto tie( const Owner_t& instance, MemberTie< Type_t(Owner_t::*), MemPtr> = {}) noexcept
-    {
-        return ConstInstanceMemberTie< Type_t(Owner_t::*), MemPtr>(instance);
-    }
-
-    ///sub0::tie - value reference to an instance of Owner_t type
-    template<typename Type_t, typename Owner_t, Type_t(Owner_t:: * MemPtr)>
-    constexpr auto& tie_value(Owner_t& instance, MemberTie< Type_t(Owner_t::*), MemPtr> = {}) noexcept
-    {
-        return instance.*MemPtr;
-    }
-
-    ///sub0::tie - value reference to an instance of Owner_t type
-    template<typename Type_t, typename Owner_t, Type_t(Owner_t:: * MemPtr)>
-    constexpr const auto& tie_value(const Owner_t& instance, MemberTie< Type_t(Owner_t::*), MemPtr> = {}) noexcept
-    {
-        return instance.*MemPtr;
-    }
-
-    ///sub0::tie - tie a tuple-list of MemberTie to an instance of Owner_t type
-    template<typename Owner_t, typename... MemberTies>
-    constexpr decltype(auto) tie(Owner_t& instance, std::tuple<MemberTies...> members) noexcept
-    {
-        return std::apply([&instance](MemberTies const&... members) {
-            return std::make_tuple(tie(instance, members)...); }, members);
-    }
-
-    ///sub0::tie - tie a tuple-list of MemberTie to an instance of Owner_t type
-    template<typename Owner_t, typename... MemberTies>
-    constexpr decltype(auto) tie(const Owner_t& instance, std::tuple<MemberTies...> members) noexcept
-    {
-        return std::apply([&instance](MemberTies const&... members) {
-            return std::make_tuple(tie(instance, members)...); }, members);
-    }
-
-    ///sub0::tie - tie a MemberTie to an instance of Owner_t type
-    template <typename MemberTie_t>
-    constexpr typename MemberTie_t::type_t& tie(typename MemberTie_t::owner_t& instance) noexcept
-    {
-        return MemberTie_t()(instance);
-    }
-
-    ///sub0::tie - tie a MemberTie to an instance of Owner_t type
-    template <typename MemberTie_t>
-    constexpr typename const MemberTie_t::type_t& tie(typename const MemberTie_t::owner_t& instance) noexcept
-    {
-        return MemberTie_t()(instance);
-    }
-
-    template<typename Type_t, typename Owner_t, Type_t(Owner_t:: * MemPtr)>
-    constexpr std::string_view name(MemberTie< Type_t(Owner_t::*), MemPtr>) noexcept
-    {
-        return reflect(Owner_t()).name(MemberTie< Type_t(Owner_t::*), MemPtr>());
-    }
-
-
-    /** Reflection type for given owner type
+    /** GCC uses mangled type names for `typeid(foo).name()` e.g. `foo::bar` is reported as `N3foo3barE`
+    * ... No-op demangle when not GCC
     */
-    template <class Owner_t>
-    struct reflect_t
+    std::string demangle(std::string_view name)
     {
-        using type = Owner_t;
-        static constexpr std::string_view name() { return sub0_name(Owner_t()); }
-    };
-
-    /** Instantiate reflection over the given object instance
-    */
-    template<typename Owner_t>
-    constexpr auto reflect(Owner_t instance)
-    {
-        return reflect_t<Owner_t>(instance);
+#ifdef __GNUG__
+        int status = -1; // @note Not '0' as this indicates success
+        std::unique_ptr<char, void(*)(void*)> res{
+            abi::__cxa_demangle(name.data(), NULL, NULL, &status),
+            std::free
+        };
+        return (status == 0) ? res.get() : name.data();
+#else
+        return name.data(); //< no-op
+#endif
     }
 
-    template<typename Owner_t>
-    constexpr const char* name(Owner_t instance = {})
-    {
-        return reflect_t<Owner_t>::name; 
-    }
+} //<END: internal
+} //<END: sub0reflect
 
-} // END: sub0
+/**
+ * @code
+ * SUB0REFLECT_REFLECT( Type, {members...} )
+ * @endcode 
+ */
+#ifndef SUB0REFLECT_REFLECT
+#if 0
+template <template <typename> typename Transformer, typename... Ts>
+auto transform_types(std::tuple<Ts...>)->std::tuple<typename Transformer<Ts>::type...>;
+
+template <template <typename> typename Transformer, typename Tuple>
+using transform_types_t = decltype(transform_types<Transformer>(std::declval<Tuple>()));
+#endif
+
+#define SUB0REFLECT_MEMBER( MEMBER ) using MEMBER = sub0reflect::internal::MemberTie<decltype(type_t::MEMBER) type_t::*, &type_t::MEMBER>;
+
+#define SUB0REFLECT_MEMBERMIRROR( MEMBER ) members_t::MEMBER MEMBER = {};
+#define SUB0REFLECT_MEMBERMIRROR_TIE( MEMBER ) members_t::MEMBER::tie_t MEMBER;
+#define SUB0REFLECT_MEMBERMIRROR_REF( MEMBER ) members_t::MEMBER::type_t& MEMBER;
+#define SUB0REFLECT_MEMBERMIRROR_CONSTTIE( MEMBER ) members_t::MEMBER::const_tie_t MEMBER;
+#define SUB0REFLECT_MEMBERMIRROR_CONSTREF( MEMBER ) const members_t::MEMBER::type_t& MEMBER;
+
+#define SUB0REFLECT_MEMBER_NAME( MEMBER ) \
+    [[nodiscard]] static constexpr std::string_view name(members_t::MEMBER) noexcept  { return SUB0REFLECT_STRINGIFY(MEMBER); }
+
+#define SUB0REFLECT_REFLECT_IMPL( T, Tname, Tuuid, ... )                                                   \
+    namespace sub0reflect { namespace internal {                                                           \
+        template <> struct membertie_type_mirror<T> {                                                       \
+            using type_t = T;                                                                               \
+            struct members_t{ SUB0REFLECT_MAP(SUB0REFLECT_MEMBER, __VA_ARGS__); };                        \
+        };                                                                                                  \
+        template <> struct member_meta<T> {                                                                 \
+            using type_t = T;                                                                               \
+            static constexpr bool hasExplicit = true;                                                       \
+            using members_t = membertie_type_mirror<type_t>::members_t;                                     \
+            struct mirror{ SUB0REFLECT_MAP(SUB0REFLECT_MEMBERMIRROR, __VA_ARGS__); };                     \
+            struct mirror_tie{ SUB0REFLECT_MAP(SUB0REFLECT_MEMBERMIRROR_TIE, __VA_ARGS__); };             \
+            struct mirror_ref{ SUB0REFLECT_MAP(SUB0REFLECT_MEMBERMIRROR_REF, __VA_ARGS__); };             \
+            struct mirror_const_tie{ SUB0REFLECT_MAP(SUB0REFLECT_MEMBERMIRROR_CONSTTIE, __VA_ARGS__); };  \
+            struct mirror_const_ref{ SUB0REFLECT_MAP(SUB0REFLECT_MEMBERMIRROR_CONSTREF, __VA_ARGS__); };  \
+            [[nodiscard]] static constexpr std::string_view name() { return #Tname; }                       \
+            SUB0REFLECT_MAP(SUB0REFLECT_MEMBER_NAME, __VA_ARGS__);                                        \
+            struct tuples : private members_t {  using all = std::tuple<__VA_ARGS__>;  };                   \
+        };                                                                                                  \
+    } /* END: internal*/ } /* END: sub0reflect*/
+
+
+#define SUB0REFLECT_REFLECT( T, ... ) \
+    SUB0REFLECT_REFLECT_IMPL( T, T, T, __VA_ARGS__ )
+
+/** Provide Tname when T is template e.g. `Foo<1>` is not a valid NS name so `Tname` can be set to `Foo_1`
+*/
+#define SUB0REFLECT_REFLECT_T( T, Tname, ... ) \
+    SUB0REFLECT_REFLECT_IMPL( T, Tname, Tname, __VA_ARGS__ )
 
 #endif
+
+/** sub0reflect top-level namespace
+*/
+namespace sub0reflect
+{
+
+    template< typename T>
+    struct reflect;
+
+    template< typename T>
+    struct tie : reflect< std::remove_const_t<T> >
+    {
+        using type_t = T;
+        using reflect_t = reflect< std::remove_const_t<T> >;
+
+        type_t& instance;
+
+        constexpr tie(type_t& instance)
+            : instance(instance) 
+        {}
+
+        [[nodiscard]] constexpr auto members() const noexcept
+        {
+            return std::apply([this](auto... member) { 
+                return std::tuple{ member.tie(instance)... }; 
+            }, reflect_t::members());
+        }
+
+        [[nodiscard]] constexpr auto mirror() const noexcept
+        {
+            return reflect_t::mirror(instance);
+        }
+
+        [[nodiscard]] constexpr auto ref() const noexcept
+        {
+            return reflect_t::ref(instance);
+        }
+
+#if 0 ///< @TODO Compile time visit()?
+        template< typename Function >
+        [[nodiscard]] constexpr auto visit(const std::string_view& memberName, const Function& visitor) const noexcept
+        {
+            constexpr std::string_view t = "ppg";
+            auto found = std::apply( [t](auto... member) {
+                return  std::tuple_cat(std::conditional_t<decltype(member)::name() == t,
+                          std::tuple<decltype(member)>,
+                          std::tuple<>>{}...);
+            }, reflect_t::members());
+
+            return visitor(*std::get<0>(found).tie(instance));
+        }
+#endif
+    };
+
+    template< typename T>
+    struct reflect 
+    {
+        using type_t = T;
+        using members_t = typename internal::member_meta<T>::tuples::all;
+
+        [[nodiscard]] static constexpr auto name() noexcept
+        {
+            return internal::member_meta<T>::name();
+        }
+
+        [[nodiscard]] static constexpr auto members() noexcept
+        { 
+            return members_t{};
+        }
+
+        [[nodiscard]] static constexpr auto memberNames() noexcept
+        {
+            return std::apply([](auto... member) { return std::array{ member.name()... }; }, members() );
+        }
+
+        [[nodiscard]] static constexpr int index(const std::string_view& memberName )
+        {
+            constexpr auto names = memberNames();
+            const auto iBegin = std::begin(names);
+            const auto iEnd = std::end(names);
+            auto iCursor = iBegin;
+            while (iCursor != iEnd && *iCursor != memberName) { ++iCursor; }
+            if (iCursor == iEnd)
+                throw std::invalid_argument("sub0reflect: Member 'name' is not bound for type");
+            return std::distance(iBegin, iCursor);
+        }
+
+        [[nodiscard]] static constexpr auto mirror() noexcept
+        {
+            return typename internal::member_meta<T>::mirror{};
+        }
+
+        [[nodiscard]] static constexpr auto mirror(const type_t& instance) noexcept
+        {
+            return std::apply([&instance](auto... member) -> typename internal::member_meta<T>::mirror_const_tie 
+                { return { member.tie(instance)... }; }, members());
+        }
+
+        [[nodiscard]] static constexpr auto mirror( type_t& instance) noexcept
+        {
+            return std::apply([&instance](auto... member) -> typename internal::member_meta<T>::mirror_tie
+                { return { member.tie(instance)... }; }, members());
+        }
+#if 1
+        [[nodiscard]] static constexpr auto ref(const type_t& instance) noexcept
+        {
+            return std::apply([&instance](auto... member) -> typename internal::member_meta<T>::mirror_const_ref
+                { return { *member.tie(instance)... }; }, members());
+        }
+
+       // [[nodiscard]] static constexpr auto mirror(type_t& instance) noexcept
+       // {
+       //     return std::apply([&instance](auto... member) -> typename internal::member_meta<T>::mirror_tie
+       //         { return { member.tie(instance)... }; }, members());
+       // }
+#endif
+
+        [[nodiscard]] static constexpr auto tie(const type_t& instance) noexcept
+        {
+            return sub0reflect::tie{ instance };
+        }
+
+        [[nodiscard]] static constexpr auto tie(type_t& instance) noexcept
+        {
+            return sub0reflect::tie{ instance };
+        }
+
+    public: //< Instance functions
+
+        [[nodiscard]] constexpr auto operator()( const type_t& instance ) const
+        {
+            return tie( instance );
+        }
+
+        [[nodiscard]] constexpr auto operator()(type_t& instance) const
+        {
+            return tie(instance);
+        }
+
+    };
+
+    /** Compile-time check for when explicit CPPREFLECT17_REFLECT_T() or CPPREFLECT17_REFLECT() has been provided for member-names
+    */
+    template <typename T>
+    constexpr bool hasExplicitReflection() noexcept
+    {
+        return internal::member_meta<T>::hasExplicit;
+    }
+
+    /** Compile-time check for when no CPPREFLECT17_REFLECT_T() or CPPREFLECT17_REFLECT() has been provided for member-names
+    */
+    template <typename T>
+    constexpr bool hasImplicitReflection() noexcept
+    {
+        // @todo We should also support automatic reflection (i.e. Structured binding approach @see `as_tuple`)
+        return false; // !internal::member_meta<T>::hasExplicit;
+    }
+
+
+#if 0 //, @todo free functions for short interface...?
+    template <typename T>
+    constexpr std::string_view name() noexcept
+    {
+        return reflect<T>::name();
+    }
+
+    template <typename T>
+    constexpr auto members() noexcept
+    {
+        return reflect<T>::members();
+    }
+#endif
+    
+
+ } ///END: sub0reflect
