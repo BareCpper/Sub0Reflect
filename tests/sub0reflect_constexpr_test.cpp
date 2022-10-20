@@ -1,45 +1,62 @@
-#include "cppReflect17/cppReflect17.hpp"
+#include "sub0reflect/sub0reflect.hpp"
 #include "gtest/gtest.h"
 
 namespace NS1 {
     namespace NS2 {
         namespace NS3 { 
-            struct Foo
+            struct FullReflected
             {
-                int bar;
+                int foo;
+                unsigned int bar;
                 float baz;
+            };
+
+            struct PartialReflected
+            {
+                int foo;
+                unsigned int bar;
+                float baz; //< NOT Reflected
             };
 
             struct NotReflection
             {
                 int a, b, c;
             };
+
+            template<bool option>
+            struct TemplateReflection
+            {
+                int foo, bar, baz;
+            };
         } 
     } 
 }
 
-CPPREFLECT17_REFLECT(NS1::NS2::NS3::Foo, bar, baz);
+SUB0REFLECT_REFLECT(NS1::NS2::NS3::FullReflected, foo, bar, baz);
+SUB0REFLECT_REFLECT(NS1::NS2::NS3::PartialReflected, foo, bar); //< @note `baz` is NOT reflected
+SUB0REFLECT_REFLECT(NS1::NS2::NS3::TemplateReflection<true>, foo, bar, baz);
+SUB0REFLECT_REFLECT(NS1::NS2::NS3::TemplateReflection<false>, foo, bar, baz);
 
 #if 0 //, @todo free functions short interface...?
-constexpr auto ta = cppReflect17::name<NS1::NS2::NS3::Foo>();
-static_assert(ta == "Foo");
-constexpr auto ta_mem = cppReflect17::members<NS1::NS2::NS3::Foo>();
+constexpr auto ta = sub0reflect::name<NS1::NS2::NS3::FullReflected>();
+static_assert(ta == "FullReflected");
+constexpr auto ta_mem = sub0reflect::members<NS1::NS2::NS3::FullReflected>();
 #endif
 
-static_assert(true == cppReflect17::hasExplicitReflection<NS1::NS2::NS3::Foo>());
-static_assert(false == cppReflect17::hasExplicitReflection<NS1::NS2::NS3::NotReflection>());
+static_assert(true == sub0reflect::hasExplicitReflection<NS1::NS2::NS3::FullReflected>());
+static_assert(false == sub0reflect::hasExplicitReflection<NS1::NS2::NS3::NotReflection>());
 
 #if 0 // @todo We should also support automatic reflection (i.e. Structured binding approach @see `as_tuple`)
-static_assert(true == cppReflect17::hasImplicitReflection<NS1::NS2::NS3::NotReflection>());
+static_assert(true == sub0reflect::hasImplicitReflection<NS1::NS2::NS3::NotReflection>());
 #endif
 
 #if 0 // @todo Check for undocumented explicit members i.e. Some members are only 'implicit'.. requires support automatic reflection
-static_assert(true == cppReflect17::isPartial<NS1::NS2::NS3::Foo>());
-static_assert(false == cppReflect17::isPartial<NS1::NS2::NS3::NotReflection>());
+static_assert(true == sub0reflect::isPartial<NS1::NS2::NS3::FullReflected>());
+static_assert(false == sub0reflect::isPartial<NS1::NS2::NS3::NotReflection>());
 #endif
 
-constexpr auto reflection = cppReflect17::reflect<NS1::NS2::NS3::Foo>{};
-static_assert(reflection.name() == "NS1::NS2::NS3::Foo");
+constexpr auto reflection = sub0reflect::reflect<NS1::NS2::NS3::FullReflected>{};
+static_assert(reflection.name() == "NS1::NS2::NS3::FullReflected");
 constexpr auto mems = reflection.members();
 static_assert(std::tuple_size<decltype(mems)>() == 2);
 
@@ -60,7 +77,7 @@ static_assert(std::get<0>(mems).name() == std::get<0>(memNames));
 static_assert(std::get<1>(mems).name() == std::get<1>(memNames));
 static_assert(memNames[iPpgMem] == "bar" && memNames[iProximityMem] == "baz");
 
-constexpr NS1::NS2::NS3::Foo testData = { 123,456 };
+constexpr NS1::NS2::NS3::FullReflected testData = { 123,456 };
 
 /// Tie Member - From Members
 static_assert(std::get<iPpgMem>(mems)(testData) == testData.bar, "Tied value == input instance");
@@ -117,7 +134,7 @@ static_assert(&boundRef.baz == &testData.baz, "Tied value  is reference to input
 static_assert(bound.visit("bar", [=](auto& val) { return &val == &testData.bar; }), "Visited value is reference to input instance");
 #endif
 
-TEST(cppReflect17, constexpr)
+TEST(sub0reflect, constexpr)
 {
     EXPECT_TRUE(true); ///< @note constexpr passes by fact of compilation success
 }

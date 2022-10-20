@@ -1,8 +1,6 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.20)
 
-##########################
-
-add_executable( Sub0Reflect_Example_Basic "" )
+add_executable( Sub0Reflect_Example_Basic )
 
 target_link_libraries(Sub0Reflect_Example_Basic
     PUBLIC
